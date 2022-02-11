@@ -117,6 +117,11 @@ class category_bin extends base_bin {
         // This hack will be removed once recycle bin switches to use its own backup mode, with
         // own preferences and 100% separate from MOODLE_AUTOMATED.
         // TODO: Remove this as part of MDL-65228.
+        $previous_forced_plugin_settings =
+            (isset($CFG->forced_plugin_settings) && isset($CFG->forced_plugin_settings['backup']))
+            ? $CFG->forced_plugin_settings['backup']
+            : null
+        ;
         $CFG->forced_plugin_settings['backup'] = ['backup_auto_storage' => 0, 'backup_auto_files' => 1];
 
         // Backup the course.
@@ -131,10 +136,14 @@ class category_bin extends base_bin {
         );
         $controller->execute_plan();
 
-        // We don't need the forced setting anymore, hence unsetting it.
+        // We don't need the forced setting anymore, hence unsetting / restoring it.
         // TODO: Remove this as part of MDL-65228.
-        unset($CFG->forced_plugin_settings['backup']);
-
+        if ($previous_forced_plugin_settings !== null) {
+            $CFG->forced_plugin_settings['backup'] = $previous_forced_plugin_settings;
+        } else {
+            unset($CFG->forced_plugin_settings['backup']);
+        }
+        
         // Grab the result.
         $result = $controller->get_results();
         if (!isset($result['backup_destination'])) {
